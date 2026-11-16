@@ -48,6 +48,7 @@ small{color:var(--mute)}
     <div><label for="sigle">Sigle</label><input type="text" id="sigle" value="RET"></div>
     <div><label for="annee">Année</label><input type="text" id="annee" value="2026"></div>
     <div><label for="logoFile">Autre logo (facultatif)</label><input type="file" id="logoFile" accept="image/*"></div>
+    <div><label for="photoFiles">Photos des membres (facultatif)</label><input type="file" id="photoFiles" accept="image/*" multiple></div>
     <div><label for="file">Fichier CSV des membres</label><input type="file" id="file" accept=".csv,text/csv"></div>
   </div>
   <label class="chk"><input type="checkbox" id="onlyPaid"> Seulement les membres dont le statut est « payé »</label>
@@ -57,7 +58,7 @@ small{color:var(--mute)}
     <button id="zip" class="alt" disabled>Télécharger les images (ZIP)</button>
     <button id="tpl" class="alt">Télécharger un CSV modèle</button>
   </div>
-  <p><small>Colonnes reconnues : nom, prénom, commune, profession, pays de résidence, université, filière, numéro, statut. Seuls nom et prénom sont obligatoires ; le numéro est créé automatiquement s’il manque.</small></p>
+  <p><small>Colonnes reconnues : nom, prénom, commune, profession, pays de résidence, université, filière, numéro, statut, photo. Seuls nom et prénom sont obligatoires ; le numéro est créé automatiquement s’il manque.<br>Photos : sélectionnez toutes les photos d’un coup. Chaque fichier est associé à son membre par le nom indiqué dans la colonne « photo » du CSV (ex. adji-bousso-seck.jpg), ou à défaut par « prénom nom » ou par le numéro du membre. Sans photo, la carte garde l’étoile.</small></p>
 </div>
 
 <p id="info"></p><p id="err"></p>
@@ -74,7 +75,7 @@ const W=1011,H=638; // 85,6 x 54 mm à 300 dpi
 let members=[];
 
 const norm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]/g,"");
-const KEYS={nom:["nom","lastname","name"],prenom:["prenom","prenoms","firstname"],commune:["commune","nomcommune","ville","city"],profession:["profession","metier","emploi"],pays:["paysderesidence","paysresidence","pays"],univ:["universite","ecole","etablissement","univ"],filiere:["filiere","specialite","formation"],num:["numero","numeromembre","nmembre","id","matricule"],statut:["statut","paye","paiement","cotisation"]};
+const KEYS={nom:["nom","lastname","name"],prenom:["prenom","prenoms","firstname"],commune:["commune","nomcommune","ville","city"],profession:["profession","metier","emploi"],pays:["paysderesidence","paysresidence","pays"],univ:["universite","ecole","etablissement","univ"],filiere:["filiere","specialite","formation"],num:["numero","numeromembre","nmembre","id","matricule"],statut:["statut","paye","paiement","cotisation"],photo:["photo","image","portrait","fichierphoto","photographie"]};
 function pick(row,k){for(const h in row){if(KEYS[k].includes(norm(h)))return (row[h]||"").trim()}return ""}
 const isPaid=v=>["oui","paye","payee","ok","1","true","vrai","yes"].includes(norm(v));
 
@@ -87,6 +88,20 @@ let logo=logoDefault;logoDefault.onload=()=>members.length&&render();
 function wrap(c,t,max){const L=[];let l="";t.split(" ").forEach(x=>{const n=l?l+" "+x:x;if(c.measureText(n).width>max&&l){L.push(l);l=x}else l=n});if(l)L.push(l);return L}
 const numOf=m=>m.num||`${$("sigle").value}-${$("annee").value}-${String(m.idx).padStart(3,"0")}`;
 
+const photos=new Map();
+const stem=n=>norm(String(n).replace(/\.[^.]+$/,""));
+function photoFor(m){
+  const ks=[m.photo&&stem(m.photo),norm(m.prenom+m.nom),norm(m.nom+m.prenom),norm(numOf(m))].filter(Boolean);
+  for(const k of ks)if(photos.has(k))return photos.get(k);
+  return null;
+}
+function drawPhoto(c,im,cx,cy,r){
+  const k=Math.max(2*r/im.width,2*r/im.height),w=im.width*k,h=im.height*k;
+  const top=cy-r-Math.max(0,h-2*r)*.25; // cadrage un peu plus haut pour garder le visage
+  c.save();c.beginPath();c.arc(cx,cy,r,0,Math.PI*2);c.clip();
+  c.drawImage(im,cx-w/2,top,w,h);c.restore();
+  c.lineWidth=10;c.strokeStyle="#fff";c.beginPath();c.arc(cx,cy,r+5,0,Math.PI*2);c.stroke();
+}
 function drawCard(m){
   const cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d");
   const G="#00853F",Y="#FDEF42",R="#E31B23",PW=360,X=400,D=170,F='"Bricolage Grotesque",sans-serif',LX=W-40-D;
@@ -95,7 +110,8 @@ function drawCard(m){
   c.fillStyle=G;c.fillRect(0,0,PW/3,H);
   c.fillStyle=Y;c.fillRect(PW/3,0,PW/3,H);
   c.fillStyle=R;c.fillRect(2*PW/3,0,PW/3+1,H);
-  star(c,PW/2,H/2,52,G);
+  const ph=photoFor(m);
+  if(ph)drawPhoto(c,ph,PW/2,H/2,125);else star(c,PW/2,H/2,52,G);
   // logo
   if(logo&&logo.complete&&logo.naturalWidth){const k=Math.min(D/logo.naturalWidth,D/logo.naturalHeight),w=logo.naturalWidth*k,h=logo.naturalHeight*k;c.drawImage(logo,LX+(D-w)/2,28+(D-h)/2,w,h)}
   // nom du groupe
@@ -126,7 +142,7 @@ function drawCard(m){
 function load(text){
   $("err").textContent="";
   const res=Papa.parse(text,{header:true,skipEmptyLines:true});
-  members=res.data.map(r=>({nom:pick(r,"nom"),prenom:pick(r,"prenom"),commune:pick(r,"commune"),profession:pick(r,"profession"),pays:pick(r,"pays"),univ:pick(r,"univ"),filiere:pick(r,"filiere"),num:pick(r,"num"),statut:pick(r,"statut")}))
+  members=res.data.map(r=>({nom:pick(r,"nom"),prenom:pick(r,"prenom"),commune:pick(r,"commune"),profession:pick(r,"profession"),pays:pick(r,"pays"),univ:pick(r,"univ"),filiere:pick(r,"filiere"),num:pick(r,"num"),statut:pick(r,"statut"),photo:pick(r,"photo")}))
    .filter(m=>m.nom||m.prenom).map((m,i)=>({...m,idx:i+1}));
   if(!members.length){$("err").textContent="Aucun membre trouvé. Vérifiez que la première ligne contient les colonnes « nom » et « prénom ».";return}
   render();
@@ -135,7 +151,7 @@ function current(){return $("onlyPaid").checked&&members.some(m=>m.statut)?membe
 async function render(){
   await document.fonts.load('800 40px "Bricolage Grotesque"').catch(()=>{});
   const list=current(),g=$("grid");g.innerHTML="";
-  $("info").textContent=`${list.length} carte(s) prête(s)`+(list.length>12?" · aperçu des 12 premières":"")+" · cliquez sur une carte pour l’enregistrer en PNG";
+  $("info").textContent=`${list.length} carte(s) prête(s)`+(list.length>12?" · aperçu des 12 premières":"")+(photos.size?` · ${list.filter(photoFor).length} photo(s) associée(s)`:"")+" · cliquez sur une carte pour l’enregistrer en PNG";
   list.slice(0,12).forEach(m=>{const cv=drawCard(m);cv.title="Télécharger cette carte";cv.onclick=()=>save(cv.toDataURL("image/png"),`carte-${numOf(m)}.png`);g.appendChild(cv)});
   $("pdf").disabled=$("zip").disabled=!list.length;
 }
@@ -143,6 +159,19 @@ function save(url,name){const a=document.createElement("a");a.href=url;a.downloa
 
 $("file").onchange=e=>{const f=e.target.files[0];if(f)f.text().then(load)};
 $("logoFile").onchange=e=>{const f=e.target.files[0];if(!f)return;const im=new Image();im.onload=()=>{logo=im;members.length&&render()};im.src=URL.createObjectURL(f)};
+$("photoFiles").onchange=e=>{
+  photos.clear();
+  Promise.all([...e.target.files].map(f=>new Promise(res=>{
+    const im=new Image();
+    im.onload=()=>{ // réduit les grosses photos pour garder le navigateur fluide
+      const k=Math.min(1,700/Math.max(im.naturalWidth,im.naturalHeight)),cv=document.createElement("canvas");
+      cv.width=Math.round(im.naturalWidth*k);cv.height=Math.round(im.naturalHeight*k);
+      cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height);
+      photos.set(stem(f.name),cv);URL.revokeObjectURL(im.src);res();
+    };
+    im.onerror=res;im.src=URL.createObjectURL(f);
+  }))).then(()=>members.length&&render());
+};
 ["assoc","sous","sigle","annee"].forEach(id=>$(id).oninput=()=>members.length&&render());
 $("onlyPaid").onchange=()=>members.length&&render();
 
@@ -165,7 +194,7 @@ $("zip").onclick=async()=>{
   save(URL.createObjectURL(await z.generateAsync({type:"blob"})),"cartes-membres.zip");
 };
 $("tpl").onclick=()=>{
-  const csv="Nom,Prénom,Commune,Profession,Pays de résidence,Université,Filière,Statut\nSECK,Adji Bousso,Mbour,Géomaticienne,France,Université Avignon,Géomatique,oui\n";
+  const csv="Nom,Prénom,Commune,Profession,Pays de résidence,Université,Filière,Statut,Photo\nSECK,Adji Bousso,Mbour,Géomaticienne,France,Université Avignon,Géomatique,oui,adji-bousso-seck.jpg\n";
   save(URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv"})),"membres-modele.csv");
 };
 </script>
