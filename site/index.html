@@ -12,26 +12,32 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,sans-serif;line-height:1.5}
 main{max-width:980px;margin:0 auto;padding:32px 20px 64px}
-h1{font-size:clamp(28px,5vw,44px);line-height:1.05;margin:0 0 8px;font-weight:800;letter-spacing:-.02em}
+h1{font-size:clamp(26px,4.4vw,38px);line-height:1.08;margin:0 0 8px;font-weight:800;letter-spacing:-.02em}
 .sub{color:var(--mute);margin:0 0 28px;max-width:60ch}
-.bar{height:6px;background:linear-gradient(90deg var(--green) 0 33%,var(--gold) 33% 66%,var(--red) 66%);margin-bottom:24px}
-.bar{background:linear-gradient(90deg,var(--green) 0 33.3%,var(--gold) 33.3% 66.6%,var(--red) 66.6%)}
-.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px;margin-bottom:20px}
+.bar{width:72px;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--green) 0 33.3%,var(--gold) 33.3% 66.6%,var(--red) 66.6%);margin-bottom:22px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:22px;box-shadow:0 1px 2px rgba(20,40,29,.05),0 8px 24px -12px rgba(20,40,29,.12)}
 .row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
 label{display:block;font-size:14px;font-weight:700;margin-bottom:4px}
 input[type=text],input[type=file]{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
-input:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+input:focus-visible,button:focus-visible,.btn:focus-within{outline:3px solid var(--gold);outline-offset:2px}
 .chk{display:flex;gap:8px;align-items:center;font-weight:500;margin-top:12px}
 .chk input{width:18px;height:18px;accent-color:var(--green)}
-button{font:inherit;font-weight:700;padding:10px 16px;border-radius:6px;border:2px solid var(--green);background:var(--green);color:#fff;cursor:pointer}
-button.alt{background:transparent;color:var(--green)}
-@media (prefers-color-scheme:dark){button.alt{color:var(--gold);border-color:var(--gold)}}
+button,.btn{display:inline-block;font:inherit;font-weight:700;padding:10px 16px;border-radius:8px;border:2px solid var(--green);background:var(--green);color:#fff;cursor:pointer;text-align:center;margin:0;transition:filter .15s}
+button:hover,.btn:hover{filter:brightness(1.08)}
+button.alt,.btn.alt{background:transparent;color:var(--green)}
+.sm{font-size:13px;padding:6px 11px}
+@media (prefers-color-scheme:dark){button.alt,.btn.alt{color:var(--gold);border-color:var(--gold)}}
 button:disabled{opacity:.45;cursor:not-allowed}
 .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
 #info{color:var(--mute);margin:0 0 14px}
 #err{color:var(--red);font-weight:700}
-#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
-#grid canvas{width:100%;height:auto;border-radius:8px;box-shadow:0 0 0 1px var(--line);cursor:pointer}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.card{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:10px}
+.card canvas{width:100%;height:auto;border-radius:8px;box-shadow:0 0 0 1px var(--line)}
+.card figcaption{font-weight:700;font-size:15px;padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tools{display:flex;flex-wrap:wrap;gap:8px;padding:0 2px 2px}
+#more{display:block;margin:22px auto 0}
+[hidden]{display:none!important}
 small{color:var(--mute)}
 </style>
 </head>
@@ -57,12 +63,14 @@ small{color:var(--mute)}
     <button id="pdf" disabled>Télécharger le PDF</button>
     <button id="zip" class="alt" disabled>Télécharger les images (ZIP)</button>
     <button id="tpl" class="alt">Télécharger un CSV modèle</button>
+    <button id="demo" class="alt">Voir un exemple</button>
   </div>
-  <p><small>Colonnes reconnues : nom, prénom, commune, profession, pays de résidence, université, filière, numéro, statut, photo. Seuls nom et prénom sont obligatoires ; le numéro est créé automatiquement s’il manque.<br>Photos : sélectionnez toutes les photos d’un coup. Chaque fichier est associé à son membre par le nom indiqué dans la colonne « photo » du CSV (ex. adji-bousso-seck.jpg), ou à défaut par « prénom nom » ou par le numéro du membre. Sans photo, la carte garde l’étoile.</small></p>
+  <p><small>Colonnes reconnues : nom, prénom, commune, profession, pays de résidence, université, filière, numéro, statut, photo. Seuls nom et prénom sont obligatoires ; le numéro est créé automatiquement s’il manque.<br>Photos : sélectionnez toutes les photos d’un coup. Chaque fichier est associé à son membre par le nom indiqué dans la colonne « photo » du CSV (ex. adji-bousso-seck.jpg), ou à défaut par « prénom nom » ou par le numéro du membre. Sans photo, la carte affiche une silhouette.<br><b>Plus simple :</b> après avoir chargé le CSV (ou cliqué sur « Voir un exemple »), utilisez le bouton « Ajouter une photo » sous chaque carte.</small></p>
 </div>
 
 <p id="info"></p><p id="err"></p>
 <div id="grid"></div>
+<button id="more" class="alt" hidden>Afficher plus de cartes</button>
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -88,30 +96,42 @@ let logo=logoDefault;logoDefault.onload=()=>members.length&&render();
 function wrap(c,t,max){const L=[];let l="";t.split(" ").forEach(x=>{const n=l?l+" "+x:x;if(c.measureText(n).width>max&&l){L.push(l);l=x}else l=n});if(l)L.push(l);return L}
 const numOf=m=>m.num||`${$("sigle").value}-${$("annee").value}-${String(m.idx).padStart(3,"0")}`;
 
-const photos=new Map();
+const photos=new Map(),manual=new Map(); // manual : photos ajoutées carte par carte
 const stem=n=>norm(String(n).replace(/\.[^.]+$/,""));
 function photoFor(m){
+  if(manual.has(m.idx))return manual.get(m.idx);
   const ks=[m.photo&&stem(m.photo),norm(m.prenom+m.nom),norm(m.nom+m.prenom),norm(numOf(m))].filter(Boolean);
   for(const k of ks)if(photos.has(k))return photos.get(k);
   return null;
 }
-function drawPhoto(c,im,cx,cy,r){
-  const k=Math.max(2*r/im.width,2*r/im.height),w=im.width*k,h=im.height*k;
-  const top=cy-r-Math.max(0,h-2*r)*.25; // cadrage un peu plus haut pour garder le visage
-  c.save();c.beginPath();c.arc(cx,cy,r,0,Math.PI*2);c.clip();
-  c.drawImage(im,cx-w/2,top,w,h);c.restore();
-  c.lineWidth=10;c.strokeStyle="#fff";c.beginPath();c.arc(cx,cy,r+5,0,Math.PI*2);c.stroke();
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function frame(c,x,y,w,h){c.save();c.shadowColor="rgba(20,40,29,.22)";c.shadowBlur=22;c.shadowOffsetY=8;c.fillStyle="#fff";rr(c,x,y,w,h,24);c.fill();c.restore()}
+function drawPhoto(c,im,x,y,w,h){
+  frame(c,x,y,w,h);
+  const k=Math.max(w/im.width,h/im.height),dw=im.width*k,dh=im.height*k;
+  c.save();rr(c,x,y,w,h,24);c.clip();
+  c.drawImage(im,x+(w-dw)/2,y-Math.max(0,dh-h)*.2,dw,dh); // cadrage un peu plus haut pour garder le visage
+  c.restore();c.lineWidth=8;c.strokeStyle="#fff";rr(c,x,y,w,h,24);c.stroke();
+}
+function drawPlaceholder(c,x,y,w,h){
+  frame(c,x,y,w,h);
+  c.save();rr(c,x,y,w,h,24);c.clip();c.fillStyle="#EAE2C8";c.fillRect(x,y,w,h);
+  c.fillStyle="#B8AE8C";c.beginPath();c.arc(x+w/2,y+h*.38,w*.17,0,Math.PI*2);c.fill();
+  c.beginPath();c.ellipse(x+w/2,y+h*.96,w*.34,h*.30,0,0,Math.PI*2);c.fill();
+  c.restore();c.lineWidth=8;c.strokeStyle="#fff";rr(c,x,y,w,h,24);c.stroke();
 }
 function drawCard(m){
   const cv=document.createElement("canvas");cv.width=W;cv.height=H;const c=cv.getContext("2d");
-  const G="#00853F",Y="#FDEF42",R="#E31B23",PW=360,X=400,D=170,F='"Bricolage Grotesque",sans-serif',LX=W-40-D;
+  const G="#00853F",Y="#FDEF42",R="#E31B23",S=48,X=366,D=170,F='"Bricolage Grotesque",sans-serif',LX=W-40-D;
   c.fillStyle="#FBF7EC";c.fillRect(0,0,W,H);
-  // drapeau du Sénégal : trois bandes verticales, étoile verte au centre
-  c.fillStyle=G;c.fillRect(0,0,PW/3,H);
-  c.fillStyle=Y;c.fillRect(PW/3,0,PW/3,H);
-  c.fillStyle=R;c.fillRect(2*PW/3,0,PW/3+1,H);
-  const ph=photoFor(m);
-  if(ph)drawPhoto(c,ph,PW/2,H/2,125);else star(c,PW/2,H/2,52,G);
+  // drapeau du Sénégal, réduit à une fine bande à gauche
+  c.fillStyle=G;c.fillRect(0,0,S/3,H);
+  c.fillStyle=Y;c.fillRect(S/3,0,S/3,H);
+  c.fillStyle=R;c.fillRect(2*S/3,0,S/3+1,H);
+  star(c,S/2,H/2,7,G);
+  // photo du membre (ou silhouette)
+  const PHW=240,PHH=300,PX=S+36,PY=(H-PHH)/2,ph=photoFor(m);
+  if(ph)drawPhoto(c,ph,PX,PY,PHW,PHH);else drawPlaceholder(c,PX,PY,PHW,PHH);
   // logo
   if(logo&&logo.complete&&logo.naturalWidth){const k=Math.min(D/logo.naturalWidth,D/logo.naturalHeight),w=logo.naturalWidth*k,h=logo.naturalHeight*k;c.drawImage(logo,LX+(D-w)/2,28+(D-h)/2,w,h)}
   // nom du groupe
@@ -148,29 +168,52 @@ function load(text){
   render();
 }
 function current(){return $("onlyPaid").checked&&members.some(m=>m.statut)?members.filter(m=>isPaid(m.statut)):members}
+let shown=12;
+function toCanvas(f){return new Promise(res=>{
+  const im=new Image(),u=URL.createObjectURL(f);
+  im.onload=()=>{ // réduit les grosses photos pour garder le navigateur fluide
+    const k=Math.min(1,900/Math.max(im.naturalWidth,im.naturalHeight)),cv=document.createElement("canvas");
+    cv.width=Math.round(im.naturalWidth*k);cv.height=Math.round(im.naturalHeight*k);
+    cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height);URL.revokeObjectURL(u);res(cv);
+  };
+  im.onerror=()=>{URL.revokeObjectURL(u);res(null)};im.src=u;
+})}
+function cardEl(m){
+  const fig=document.createElement("figure");fig.className="card";
+  const cv=drawCard(m);fig.appendChild(cv);
+  const cap=document.createElement("figcaption");cap.textContent=`${m.prenom} ${m.nom}`.trim();fig.appendChild(cap);
+  const bar=document.createElement("div");bar.className="tools";
+  const lab=document.createElement("label");lab.className="btn sm";
+  const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.hidden=true;
+  lab.append(photoFor(m)?"Changer la photo":"Ajouter une photo",inp);
+  inp.onchange=async()=>{const f=inp.files[0];if(!f)return;const p=await toCanvas(f);
+    if(!p){$("err").textContent="Cette image n’a pas pu être lue.";return}
+    $("err").textContent="";manual.set(m.idx,p);fig.replaceWith(cardEl(m))};
+  bar.appendChild(lab);
+  if(manual.has(m.idx)){const rm=document.createElement("button");rm.className="alt sm";rm.textContent="Retirer";
+    rm.onclick=()=>{manual.delete(m.idx);fig.replaceWith(cardEl(m))};bar.appendChild(rm)}
+  const dl=document.createElement("button");dl.className="alt sm";dl.textContent="PNG";dl.title="Télécharger cette carte";
+  dl.onclick=()=>save(drawCard(m).toDataURL("image/png"),`carte-${numOf(m)}.png`);bar.appendChild(dl);
+  fig.appendChild(bar);return fig;
+}
 async function render(){
   await document.fonts.load('800 40px "Bricolage Grotesque"').catch(()=>{});
   const list=current(),g=$("grid");g.innerHTML="";
-  $("info").textContent=`${list.length} carte(s) prête(s)`+(list.length>12?" · aperçu des 12 premières":"")+(photos.size?` · ${list.filter(photoFor).length} photo(s) associée(s)`:"")+" · cliquez sur une carte pour l’enregistrer en PNG";
-  list.slice(0,12).forEach(m=>{const cv=drawCard(m);cv.title="Télécharger cette carte";cv.onclick=()=>save(cv.toDataURL("image/png"),`carte-${numOf(m)}.png`);g.appendChild(cv)});
+  const np=list.filter(photoFor).length;
+  $("info").textContent=`${list.length} carte(s) prête(s)`+(list.length>shown?` · ${shown} affichée(s)`:"")+(np?` · ${np} photo(s)`:"")+" · utilisez « Ajouter une photo » sous une carte";
+  list.slice(0,shown).forEach(m=>g.appendChild(cardEl(m)));
+  $("more").hidden=list.length<=shown;$("more").textContent=`Afficher plus de cartes (${list.length-shown} restantes)`;
   $("pdf").disabled=$("zip").disabled=!list.length;
 }
+$("more").onclick=()=>{shown+=12;render()};
 function save(url,name){const a=document.createElement("a");a.href=url;a.download=name;a.click()}
 
 $("file").onchange=e=>{const f=e.target.files[0];if(f)f.text().then(load)};
 $("logoFile").onchange=e=>{const f=e.target.files[0];if(!f)return;const im=new Image();im.onload=()=>{logo=im;members.length&&render()};im.src=URL.createObjectURL(f)};
 $("photoFiles").onchange=e=>{
   photos.clear();
-  Promise.all([...e.target.files].map(f=>new Promise(res=>{
-    const im=new Image();
-    im.onload=()=>{ // réduit les grosses photos pour garder le navigateur fluide
-      const k=Math.min(1,700/Math.max(im.naturalWidth,im.naturalHeight)),cv=document.createElement("canvas");
-      cv.width=Math.round(im.naturalWidth*k);cv.height=Math.round(im.naturalHeight*k);
-      cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height);
-      photos.set(stem(f.name),cv);URL.revokeObjectURL(im.src);res();
-    };
-    im.onerror=res;im.src=URL.createObjectURL(f);
-  }))).then(()=>members.length&&render());
+  Promise.all([...e.target.files].map(async f=>{const cv=await toCanvas(f);if(cv)photos.set(stem(f.name),cv)}))
+    .then(()=>members.length&&render());
 };
 ["assoc","sous","sigle","annee"].forEach(id=>$(id).oninput=()=>members.length&&render());
 $("onlyPaid").onchange=()=>members.length&&render();
@@ -193,10 +236,11 @@ $("zip").onclick=async()=>{
   current().forEach(m=>z.file(`carte-${numOf(m)}.png`,drawCard(m).toDataURL("image/png").split(",")[1],{base64:true}));
   save(URL.createObjectURL(await z.generateAsync({type:"blob"})),"cartes-membres.zip");
 };
+const SAMPLE="Nom,Prénom,Commune,Profession,Pays de résidence,Université,Filière,Statut,Photo\nSECK,Adji Bousso,Mbour,Géomaticienne,France,Université Avignon,Géomatique,oui,adji-bousso-seck.jpg\n";
 $("tpl").onclick=()=>{
-  const csv="Nom,Prénom,Commune,Profession,Pays de résidence,Université,Filière,Statut,Photo\nSECK,Adji Bousso,Mbour,Géomaticienne,France,Université Avignon,Géomatique,oui,adji-bousso-seck.jpg\n";
-  save(URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv"})),"membres-modele.csv");
+  save(URL.createObjectURL(new Blob(["\ufeff"+SAMPLE],{type:"text/csv"})),"membres-modele.csv");
 };
+$("demo").onclick=()=>{manual.clear();load(SAMPLE)};
 </script>
 </body>
 </html>
